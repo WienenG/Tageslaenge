@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Wassenberg – Sonnenzeiten & Tageslänge</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="card">
+    <header>
+      <h1>Wassenberg</h1>
+      <p class="sub">Sonnenaufgang, Sonnenuntergang & Tageslänge</p>
+    </header>
+
+    <section class="grid">
+      <div class="box">
+        <div class="label">Datum</div>
+        <div id="date" class="value">–</div>
+      </div>
+      <div class="box">
+        <div class="label">Sonnenaufgang</div>
+        <div id="sunrise" class="value">–</div>
+      </div>
+      <div class="box">
+        <div class="label">Sonnenuntergang</div>
+        <div id="sunset" class="value">–</div>
+      </div>
+      <div class="box">
+        <div class="label">Tageslänge</div>
+        <div id="daylen" class="value">–</div>
+      </div>
+    </section>
+
+    <hr />
+
+    <section class="grid">
+      <div class="box">
+        <div class="label">Kürzester Tag (dieses Jahr)</div>
+        <div id="minDay" class="value">–</div>
+      </div>
+      <div class="box">
+        <div class="label">Tageslänge am kürzesten Tag</div>
+        <div id="minLen" class="value">–</div>
+      </div>
+      <div class="box">
+        <div class="label">Differenz zu heute</div>
+        <div id="diff" class="value">–</div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <div class="small" id="meta">–</div>
+      <button id="refresh">Neu berechnen</button>
+    </footer>
+  </main>
+
+  <!-- SunCalc (CDN) -->
+  <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
