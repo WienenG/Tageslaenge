@@ -1,125 +1,288 @@
-// Wassenberg (fix)
-// Koordinaten: ~51.1013, 6.1555  (WGS84)
-const LAT = 51.1013;
-const LON = 6.1555;
-const PLACE = "Wassenberg (DE)";
-const TZ = "Europe/Berlin";
+const latitude = 51.1006;
+const longitude = 6.1548;
 
-const $ = (id) => document.getElementById(id);
+const dateElement = document.getElementById("date");
+const sunriseElement = document.getElementById("sunrise");
+const sunsetElement = document.getElementById("sunset");
+const daylenElement = document.getElementById("daylen");
 
-function fmtDate(d) {
+const minDayElement = document.getElementById("minDay");
+const minLenElement = document.getElementById("minLen");
+const diffMinElement = document.getElementById("diffMin");
+
+const maxDayElement = document.getElementById("maxDay");
+const maxLenElement = document.getElementById("maxLen");
+const diffMaxElement = document.getElementById("diffMax");
+
+const progressTextElement = document.getElementById("progressText");
+const progressPercentElement = document.getElementById("progressPercent");
+const progressBarElement = document.getElementById("progressBar");
+const progressMarkerElement = document.getElementById("progressMarker");
+const trendElement = document.getElementById("trend");
+
+const metaElement = document.getElementById("meta");
+const refreshButton = document.getElementById("refresh");
+
+
+function formatDate(date) {
   return new Intl.DateTimeFormat("de-DE", {
-    timeZone: TZ,
     weekday: "long",
-    year: "numeric",
-    month: "2-digit",
     day: "2-digit",
-  }).format(d);
+    month: "long",
+    year: "numeric"
+  }).format(date);
 }
 
-function fmtTime(d) {
+
+function formatShortDate(date) {
   return new Intl.DateTimeFormat("de-DE", {
-    timeZone: TZ,
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  }).format(date);
+}
+
+
+function formatTime(date) {
+  return new Intl.DateTimeFormat("de-DE", {
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
-  }).format(d);
+    second: "2-digit"
+  }).format(date);
 }
 
-function pad2(n) { return String(n).padStart(2, "0"); }
 
-function fmtDuration(ms) {
-  const totalMinutes = Math.round(ms / 60000);
-  const sign = totalMinutes < 0 ? "-" : "";
-  const m = Math.abs(totalMinutes);
-  const hh = Math.floor(m / 60);
-  const mm = m % 60;
-  return `${sign}${hh}:${pad2(mm)} h`;
+function formatDuration(milliseconds) {
+  const totalSeconds = Math.round(Math.abs(milliseconds) / 1000);
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${hours} Std. ${minutes} Min. ${seconds} Sek.`;
 }
 
-function dayStartLocal(date) {
-  // "Mitternacht" in Europe/Berlin als Date-Objekt (UTC intern),
-  // indem wir die lokalen Teile formatieren und neu bauen.
-  // (Robust genug für dieses Projekt.)
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
 
-  const y = parts.find(p => p.type === "year").value;
-  const mo = parts.find(p => p.type === "month").value;
-  const da = parts.find(p => p.type === "day").value;
+function formatDifference(milliseconds) {
+  const totalSeconds = Math.round(Math.abs(milliseconds) / 1000);
 
-  // Erzeuge Datum um 12:00 UTC, damit wir garantiert am "richtigen Tag" landen,
-  // dann nehmen SunCalc für diesen Zeitpunkt (das Datum ist entscheidend).
-  return new Date(`${y}-${mo}-${da}T12:00:00Z`);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours} Std. ${minutes} Min. ${seconds} Sek.`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes} Min. ${seconds} Sek.`;
+  }
+
+  return `${seconds} Sek.`;
 }
 
-function getTimesForDay(date) {
-  const d = dayStartLocal(date);
-  const t = SunCalc.getTimes(d, LAT, LON);
-  // t.sunrise / t.sunset sind Date-Objekte
-  return t;
+
+function getDayLength(date) {
+  const times = SunCalc.getTimes(date, latitude, longitude);
+
+  if (
+    !times.sunrise ||
+    !times.sunset ||
+    Number.isNaN(times.sunrise.getTime()) ||
+    Number.isNaN(times.sunset.getTime())
+  ) {
+    return null;
+  }
+
+  return {
+    sunrise: times.sunrise,
+    sunset: times.sunset,
+    length: times.sunset.getTime() - times.sunrise.getTime()
+  };
 }
 
-function daylightLengthMs(times) {
-  if (!(times.sunrise instanceof Date) || !(times.sunset instanceof Date)) return null;
-  return times.sunset - times.sunrise;
+
+function findShortestAndLongestDay(year) {
+  let shortestDay = null;
+  let longestDay = null;
+
+  const date = new Date(year, 0, 1, 12, 0, 0);
+
+  while (date.getFullYear() === year) {
+    const currentDate = new Date(date);
+    const dayData = getDayLength(currentDate);
+
+    if (dayData !== null) {
+      if (
+        shortestDay === null ||
+        dayData.length < shortestDay.length
+      ) {
+        shortestDay = {
+          date: currentDate,
+          length: dayData.length
+        };
+      }
+
+      if (
+        longestDay === null ||
+        dayData.length > longestDay.length
+      ) {
+        longestDay = {
+          date: currentDate,
+          length: dayData.length
+        };
+      }
+    }
+
+    date.setDate(date.getDate() + 1);
+  }
+
+  return {
+    shortestDay,
+    longestDay
+  };
 }
 
-function scanShortestDay(year) {
-  // Wir iterieren alle Tage des Jahres und suchen die minimale Tageslänge.
-  // Das ist genauer als "immer 21.12." (kann je nach Ort/Schaltjahr minimal variieren).
-  const start = new Date(Date.UTC(year, 0, 1, 12, 0, 0));
-  const end = new Date(Date.UTC(year + 1, 0, 1, 12, 0, 0));
 
-  let best = null;
+function isDayLengthIncreasing(today) {
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-  for (let d = new Date(start); d < end; d.setUTCDate(d.getUTCDate() + 1)) {
-    const times = SunCalc.getTimes(d, LAT, LON);
-    const len = daylightLengthMs(times);
-    if (len == null) continue;
+  const todayData = getDayLength(today);
+  const tomorrowData = getDayLength(tomorrow);
 
-    if (!best || len < best.len) {
-      best = { date: new Date(d), len, times };
+  if (todayData === null || tomorrowData === null) {
+    return null;
+  }
+
+  return tomorrowData.length >= todayData.length;
+}
+
+
+function updateProgress(
+  todayLength,
+  shortestLength,
+  longestLength,
+  increasing
+) {
+  const totalRange = longestLength - shortestLength;
+  const currentRange = todayLength - shortestLength;
+
+  let percentage = 0;
+
+  if (totalRange > 0) {
+    percentage = (currentRange / totalRange) * 100;
+  }
+
+  percentage = Math.max(0, Math.min(100, percentage));
+
+  progressBarElement.style.width = `${percentage}%`;
+  progressMarkerElement.style.left = `${percentage}%`;
+
+  progressPercentElement.textContent =
+    `${percentage.toFixed(1).replace(".", ",")} %`;
+
+  progressTextElement.textContent =
+    `${formatDifference(currentRange)} mehr Tageslicht als am kürzesten Tag`;
+
+  if (increasing === true) {
+    trendElement.textContent = "Die Tage werden länger ↑";
+  } else if (increasing === false) {
+    trendElement.textContent = "Die Tage werden kürzer ↓";
+  } else {
+    trendElement.textContent = "Jahresverlauf";
+  }
+}
+
+
+function calculate() {
+  const now = new Date();
+
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    12,
+    0,
+    0
+  );
+
+  const todayData = getDayLength(today);
+
+  if (todayData === null) {
+    metaElement.textContent =
+      "Die Sonnenzeiten konnten nicht berechnet werden.";
+
+    return;
+  }
+
+  const yearData = findShortestAndLongestDay(today.getFullYear());
+
+  dateElement.textContent = formatDate(today);
+  sunriseElement.textContent = formatTime(todayData.sunrise);
+  sunsetElement.textContent = formatTime(todayData.sunset);
+  daylenElement.textContent = formatDuration(todayData.length);
+
+  if (yearData.shortestDay !== null) {
+    minDayElement.textContent =
+      formatShortDate(yearData.shortestDay.date);
+
+    minLenElement.textContent =
+      formatDuration(yearData.shortestDay.length);
+
+    const differenceToShortest =
+      todayData.length - yearData.shortestDay.length;
+
+    if (Math.abs(differenceToShortest) < 1000) {
+      diffMinElement.textContent =
+        "Heute ist der kürzeste Tag";
+    } else {
+      diffMinElement.textContent =
+        `${formatDifference(differenceToShortest)} länger`;
     }
   }
-  return best;
-}
 
-function render() {
-  const now = new Date();
-  const year = Number(new Intl.DateTimeFormat("en-US", { timeZone: TZ, year: "numeric" }).format(now));
+  if (yearData.longestDay !== null) {
+    maxDayElement.textContent =
+      formatShortDate(yearData.longestDay.date);
 
-  const todayTimes = getTimesForDay(now);
-  const todayLen = daylightLengthMs(todayTimes);
+    maxLenElement.textContent =
+      formatDuration(yearData.longestDay.length);
 
-  const shortest = scanShortestDay(year);
+    const differenceToLongest =
+      yearData.longestDay.length - todayData.length;
 
-  $("date").textContent = fmtDate(now);
-  $("sunrise").textContent = fmtTime(todayTimes.sunrise);
-  $("sunset").textContent = fmtTime(todayTimes.sunset);
-  $("daylen").textContent = todayLen != null ? fmtDuration(todayLen) : "–";
-
-  if (shortest) {
-    $("minDay").textContent = fmtDate(shortest.date);
-    $("minLen").textContent = fmtDuration(shortest.len);
-
-    const diff = (todayLen ?? 0) - shortest.len;
-    const diffLabel = diff >= 0 ? `+${fmtDuration(diff)}` : fmtDuration(diff);
-    $("diff").textContent = diffLabel;
-  } else {
-    $("minDay").textContent = "–";
-    $("minLen").textContent = "–";
-    $("diff").textContent = "–";
+    if (Math.abs(differenceToLongest) < 1000) {
+      diffMaxElement.textContent =
+        "Heute ist der längste Tag";
+    } else {
+      diffMaxElement.textContent =
+        `${formatDifference(differenceToLongest)} kürzer`;
+    }
   }
 
-  $("meta").textContent = `${PLACE} · Lat ${LAT.toFixed(4)}, Lon ${LON.toFixed(4)} · Zeitzone ${TZ}`;
+  if (
+    yearData.shortestDay !== null &&
+    yearData.longestDay !== null
+  ) {
+    const increasing = isDayLengthIncreasing(today);
+
+    updateProgress(
+      todayData.length,
+      yearData.shortestDay.length,
+      yearData.longestDay.length,
+      increasing
+    );
+  }
+
+  metaElement.textContent =
+    `Berechnet für Wassenberg bei ` +
+    `${latitude.toFixed(4)}° N, ` +
+    `${longitude.toFixed(4)}° E · ` +
+    `Stand: ${formatTime(now)} Uhr`;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  render();
-  $("refresh").addEventListener("click", render);
-});
+
+refreshButton.addEventListener("click", calculate);
+
+calculate();
