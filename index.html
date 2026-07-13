@@ -2,61 +2,127 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <title>Wassenberg – Sonnenzeiten & Tageslänge</title>
+
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
+
   <main class="card">
+
     <header>
       <h1>Wassenberg</h1>
-      <p class="sub">Sonnenaufgang, Sonnenuntergang & Tageslänge</p>
+      <p class="sub">
+        Sonnenaufgang, Sonnenuntergang & Tageslänge
+      </p>
     </header>
 
     <section class="grid">
+
       <div class="box">
         <div class="label">Datum</div>
         <div id="date" class="value">–</div>
       </div>
+
       <div class="box">
         <div class="label">Sonnenaufgang</div>
         <div id="sunrise" class="value">–</div>
       </div>
+
       <div class="box">
         <div class="label">Sonnenuntergang</div>
         <div id="sunset" class="value">–</div>
       </div>
+
       <div class="box">
         <div class="label">Tageslänge</div>
         <div id="daylen" class="value">–</div>
       </div>
+
     </section>
 
     <hr />
 
     <section class="grid">
+
       <div class="box">
-        <div class="label">Kürzester Tag (dieses Jahr)</div>
+        <div class="label">Kürzester Tag</div>
         <div id="minDay" class="value">–</div>
       </div>
+
       <div class="box">
         <div class="label">Tageslänge am kürzesten Tag</div>
         <div id="minLen" class="value">–</div>
       </div>
+
       <div class="box">
         <div class="label">Differenz zu heute</div>
-        <div id="diff" class="value">–</div>
+        <div id="diffMin" class="value">–</div>
       </div>
+
+      <div class="box">
+        <div class="label">Längster Tag</div>
+        <div id="maxDay" class="value">–</div>
+      </div>
+
+      <div class="box">
+        <div class="label">Tageslänge am längsten Tag</div>
+        <div id="maxLen" class="value">–</div>
+      </div>
+
+      <div class="box">
+        <div class="label">Differenz zu heute</div>
+        <div id="diffMax" class="value">–</div>
+      </div>
+
+    </section>
+
+    <hr />
+
+    <section class="year-progress">
+
+      <div class="progress-heading">
+        <div>
+          <div class="label">Tageslänge im Jahresverlauf</div>
+          <div id="progressText" class="progress-text">–</div>
+        </div>
+
+        <div id="progressPercent" class="progress-percent">–</div>
+      </div>
+
+      <div class="progress-labels">
+        <span>Kürzester Tag</span>
+        <span>Längster Tag</span>
+      </div>
+
+      <div class="progress-track">
+        <div id="progressBar" class="progress-bar"></div>
+        <div id="progressMarker" class="progress-marker"></div>
+      </div>
+
+      <div class="progress-symbols">
+        <span>Winter</span>
+        <span id="trend">–</span>
+        <span>Sommer</span>
+      </div>
+
     </section>
 
     <footer class="foot">
       <div class="small" id="meta">–</div>
-      <button id="refresh">Neu berechnen</button>
+      <button id="refresh" type="button">Neu berechnen</button>
     </footer>
+
   </main>
 
-  <!-- SunCalc (CDN) -->
+  <!-- Bibliothek zur Berechnung der Sonnenzeiten -->
   <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+
+  <!-- Eigene Berechnungen -->
   <script src="app.js"></script>
+
 </body>
 </html>
