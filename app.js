@@ -1,47 +1,60 @@
-const latitude = 51.1006;
-const longitude = 6.1548;
+const LOCATION = {
+  name: "Wassenberg",
+  latitude: 51.1006,
+  longitude: 6.1548
+};
 
-const dateElement = document.getElementById("date");
-const sunriseElement = document.getElementById("sunrise");
-const sunsetElement = document.getElementById("sunset");
-const daylenElement = document.getElementById("daylen");
+const $ = (id) => document.getElementById(id);
 
-const minDayElement = document.getElementById("minDay");
-const minLenElement = document.getElementById("minLen");
-const diffMinElement = document.getElementById("diffMin");
+const elements = {
+  date: $("date"),
+  sunrise: $("sunrise"),
+  sunset: $("sunset"),
+  daylen: $("daylen"),
+  trendToday: $("trendToday"),
 
-const maxDayElement = document.getElementById("maxDay");
-const maxLenElement = document.getElementById("maxLen");
-const diffMaxElement = document.getElementById("diffMax");
+  minDay: $("minDay"),
+  minLen: $("minLen"),
+  diffMin: $("diffMin"),
 
-const progressTextElement = document.getElementById("progressText");
-const progressPercentElement = document.getElementById("progressPercent");
-const progressBarElement = document.getElementById("progressBar");
-const progressMarkerElement = document.getElementById("progressMarker");
-const trendElement = document.getElementById("trend");
+  maxDay: $("maxDay"),
+  maxLen: $("maxLen"),
+  diffMax: $("diffMax"),
 
-const metaElement = document.getElementById("meta");
-const refreshButton = document.getElementById("refresh");
+  progressText: $("progressText"),
+  progressPercent: $("progressPercent"),
+  progressBar: $("progressBar"),
+  progressMarker: $("progressMarker"),
 
+  statusLine: $("statusLine"),
+  meta: $("meta"),
+  refresh: $("refresh")
+};
 
-function formatDate(date) {
+function isValidDate(value) {
+  return value instanceof Date && !Number.isNaN(value.getTime());
+}
+
+function atLocalNoon(date) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    12,
+    0,
+    0,
+    0
+  );
+}
+
+function formatDate(date, withWeekday = false) {
   return new Intl.DateTimeFormat("de-DE", {
-    weekday: "long",
+    weekday: withWeekday ? "long" : undefined,
     day: "2-digit",
     month: "long",
     year: "numeric"
   }).format(date);
 }
-
-
-function formatShortDate(date) {
-  return new Intl.DateTimeFormat("de-DE", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric"
-  }).format(date);
-}
-
 
 function formatTime(date) {
   return new Intl.DateTimeFormat("de-DE", {
@@ -51,238 +64,200 @@ function formatTime(date) {
   }).format(date);
 }
 
+function splitDuration(milliseconds) {
+  const totalSeconds = Math.max(0, Math.round(Math.abs(milliseconds) / 1000));
 
-function formatDuration(milliseconds) {
-  const totalSeconds = Math.round(Math.abs(milliseconds) / 1000);
+  return {
+    hours: Math.floor(totalSeconds / 3600),
+    minutes: Math.floor((totalSeconds % 3600) / 60),
+    seconds: totalSeconds % 60
+  };
+}
 
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+function formatDuration(milliseconds, compact = false) {
+  const { hours, minutes, seconds } = splitDuration(milliseconds);
+
+  if (compact) {
+    if (hours > 0) {
+      return `${hours} h ${String(minutes).padStart(2, "0")} min`;
+    }
+
+    return `${minutes} min ${String(seconds).padStart(2, "0")} s`;
+  }
 
   return `${hours} Std. ${minutes} Min. ${seconds} Sek.`;
 }
 
+function getSolarData(date) {
+  const times = SunCalc.getTimes(
+    atLocalNoon(date),
+    LOCATION.latitude,
+    LOCATION.longitude
+  );
 
-function formatDifference(milliseconds) {
-  const totalSeconds = Math.round(Math.abs(milliseconds) / 1000);
-
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (hours > 0) {
-    return `${hours} Std. ${minutes} Min. ${seconds} Sek.`;
+  if (!isValidDate(times.sunrise) || !isValidDate(times.sunset)) {
+    return null;
   }
 
-  if (minutes > 0) {
-    return `${minutes} Min. ${seconds} Sek.`;
-  }
+  const length = times.sunset.getTime() - times.sunrise.getTime();
 
-  return `${seconds} Sek.`;
-}
-
-
-function getDayLength(date) {
-  const times = SunCalc.getTimes(date, latitude, longitude);
-
-  if (
-    !times.sunrise ||
-    !times.sunset ||
-    Number.isNaN(times.sunrise.getTime()) ||
-    Number.isNaN(times.sunset.getTime())
-  ) {
+  if (!Number.isFinite(length) || length <= 0) {
     return null;
   }
 
   return {
     sunrise: times.sunrise,
     sunset: times.sunset,
-    length: times.sunset.getTime() - times.sunrise.getTime()
+    length
   };
 }
 
+function findYearExtremes(year) {
+  let shortest = null;
+  let longest = null;
 
-function findShortestAndLongestDay(year) {
-  let shortestDay = null;
-  let longestDay = null;
-
-  const date = new Date(year, 0, 1, 12, 0, 0);
-
-  while (date.getFullYear() === year) {
+  for (
+    let date = new Date(year, 0, 1, 12, 0, 0, 0);
+    date.getFullYear() === year;
+    date.setDate(date.getDate() + 1)
+  ) {
     const currentDate = new Date(date);
-    const dayData = getDayLength(currentDate);
+    const data = getSolarData(currentDate);
 
-    if (dayData !== null) {
-      if (
-        shortestDay === null ||
-        dayData.length < shortestDay.length
-      ) {
-        shortestDay = {
-          date: currentDate,
-          length: dayData.length
-        };
-      }
-
-      if (
-        longestDay === null ||
-        dayData.length > longestDay.length
-      ) {
-        longestDay = {
-          date: currentDate,
-          length: dayData.length
-        };
-      }
+    if (!data) {
+      continue;
     }
 
-    date.setDate(date.getDate() + 1);
+    const entry = {
+      date: currentDate,
+      length: data.length
+    };
+
+    if (!shortest || entry.length < shortest.length) {
+      shortest = entry;
+    }
+
+    if (!longest || entry.length > longest.length) {
+      longest = entry;
+    }
   }
 
-  return {
-    shortestDay,
-    longestDay
-  };
+  if (!shortest || !longest) {
+    throw new Error("Jahreswerte konnten nicht vollständig berechnet werden.");
+  }
+
+  return { shortest, longest };
 }
 
+function getDailyTrend(today) {
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
 
-function isDayLengthIncreasing(today) {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const todayData = getDayLength(today);
-  const tomorrowData = getDayLength(tomorrow);
+  const yesterdayData = getSolarData(yesterday);
+  const tomorrowData = getSolarData(tomorrow);
 
-  if (todayData === null || tomorrowData === null) {
+  if (!yesterdayData || !tomorrowData) {
     return null;
   }
 
-  return tomorrowData.length >= todayData.length;
+  return tomorrowData.length - yesterdayData.length;
 }
 
-
-function updateProgress(
-  todayLength,
-  shortestLength,
-  longestLength,
-  increasing
-) {
+function updateProgress(todayLength, shortestLength, longestLength) {
   const totalRange = longestLength - shortestLength;
   const currentRange = todayLength - shortestLength;
 
-  let percentage = 0;
+  const rawPercentage = totalRange > 0
+    ? (currentRange / totalRange) * 100
+    : 0;
 
-  if (totalRange > 0) {
-    percentage = (currentRange / totalRange) * 100;
-  }
+  const percentage = Math.min(100, Math.max(0, rawPercentage));
 
-  percentage = Math.max(0, Math.min(100, percentage));
-
-  progressBarElement.style.width = `${percentage}%`;
-  progressMarkerElement.style.left = `${percentage}%`;
-
-  progressPercentElement.textContent =
+  elements.progressBar.style.width = `${percentage}%`;
+  elements.progressMarker.style.left = `${percentage}%`;
+  elements.progressPercent.textContent =
     `${percentage.toFixed(1).replace(".", ",")} %`;
 
-  progressTextElement.textContent =
-    `${formatDifference(currentRange)} mehr Tageslicht als am kürzesten Tag`;
-
-  if (increasing === true) {
-    trendElement.textContent = "Die Tage werden länger ↑";
-  } else if (increasing === false) {
-    trendElement.textContent = "Die Tage werden kürzer ↓";
-  } else {
-    trendElement.textContent = "Jahresverlauf";
-  }
+  elements.progressText.textContent =
+    `${formatDuration(currentRange, true)} mehr Tageslicht als am kürzesten Tag`;
 }
 
-
 function calculate() {
-  const now = new Date();
+  try {
+    elements.statusLine.textContent = "Berechnung läuft …";
 
-  const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    12,
-    0,
-    0
-  );
+    const now = new Date();
+    const today = atLocalNoon(now);
+    const todayData = getSolarData(today);
 
-  const todayData = getDayLength(today);
-
-  if (todayData === null) {
-    metaElement.textContent =
-      "Die Sonnenzeiten konnten nicht berechnet werden.";
-
-    return;
-  }
-
-  const yearData = findShortestAndLongestDay(today.getFullYear());
-
-  dateElement.textContent = formatDate(today);
-  sunriseElement.textContent = formatTime(todayData.sunrise);
-  sunsetElement.textContent = formatTime(todayData.sunset);
-  daylenElement.textContent = formatDuration(todayData.length);
-
-  if (yearData.shortestDay !== null) {
-    minDayElement.textContent =
-      formatShortDate(yearData.shortestDay.date);
-
-    minLenElement.textContent =
-      formatDuration(yearData.shortestDay.length);
-
-    const differenceToShortest =
-      todayData.length - yearData.shortestDay.length;
-
-    if (Math.abs(differenceToShortest) < 1000) {
-      diffMinElement.textContent =
-        "Heute ist der kürzeste Tag";
-    } else {
-      diffMinElement.textContent =
-        `${formatDifference(differenceToShortest)} länger`;
+    if (!todayData) {
+      throw new Error("Die Sonnenzeiten für heute konnten nicht berechnet werden.");
     }
-  }
 
-  if (yearData.longestDay !== null) {
-    maxDayElement.textContent =
-      formatShortDate(yearData.longestDay.date);
+    const { shortest, longest } = findYearExtremes(today.getFullYear());
 
-    maxLenElement.textContent =
-      formatDuration(yearData.longestDay.length);
+    elements.date.textContent = formatDate(today, true);
+    elements.sunrise.textContent = formatTime(todayData.sunrise);
+    elements.sunset.textContent = formatTime(todayData.sunset);
+    elements.daylen.textContent = formatDuration(todayData.length, true);
 
-    const differenceToLongest =
-      yearData.longestDay.length - todayData.length;
+    const dailyTrend = getDailyTrend(today);
 
-    if (Math.abs(differenceToLongest) < 1000) {
-      diffMaxElement.textContent =
-        "Heute ist der längste Tag";
+    if (dailyTrend === null) {
+      elements.trendToday.textContent = "Tendenz nicht verfügbar";
+    } else if (Math.abs(dailyTrend) < 1000) {
+      elements.trendToday.textContent = "Nahezu unverändert";
+    } else if (dailyTrend > 0) {
+      elements.trendToday.textContent =
+        `Die Tage werden länger · etwa ${formatDuration(dailyTrend / 2, true)} pro Tag`;
     } else {
-      diffMaxElement.textContent =
-        `${formatDifference(differenceToLongest)} kürzer`;
+      elements.trendToday.textContent =
+        `Die Tage werden kürzer · etwa ${formatDuration(dailyTrend / 2, true)} pro Tag`;
     }
-  }
 
-  if (
-    yearData.shortestDay !== null &&
-    yearData.longestDay !== null
-  ) {
-    const increasing = isDayLengthIncreasing(today);
+    elements.minDay.textContent = formatDate(shortest.date);
+    elements.minLen.textContent = formatDuration(shortest.length, true);
+
+    const differenceToShortest = todayData.length - shortest.length;
+    elements.diffMin.textContent =
+      Math.abs(differenceToShortest) < 1000
+        ? "Heute"
+        : formatDuration(differenceToShortest, true);
+
+    elements.maxDay.textContent = formatDate(longest.date);
+    elements.maxLen.textContent = formatDuration(longest.length, true);
+
+    const differenceToLongest = longest.length - todayData.length;
+    elements.diffMax.textContent =
+      Math.abs(differenceToLongest) < 1000
+        ? "Heute"
+        : formatDuration(differenceToLongest, true);
 
     updateProgress(
       todayData.length,
-      yearData.shortestDay.length,
-      yearData.longestDay.length,
-      increasing
+      shortest.length,
+      longest.length
     );
-  }
 
-  metaElement.textContent =
-    `Berechnet für Wassenberg bei ` +
-    `${latitude.toFixed(4)}° N, ` +
-    `${longitude.toFixed(4)}° E · ` +
-    `Stand: ${formatTime(now)} Uhr`;
+    elements.statusLine.textContent = "Sonnenzeiten erfolgreich berechnet";
+    elements.meta.textContent =
+      `${LOCATION.name} · ${LOCATION.latitude.toFixed(4)}° N, ` +
+      `${LOCATION.longitude.toFixed(4)}° E · aktualisiert um ${formatTime(now)} Uhr`;
+  } catch (error) {
+    console.error(error);
+
+    elements.statusLine.textContent = "Berechnung fehlgeschlagen";
+    elements.meta.textContent =
+      error instanceof Error ? error.message : "Unbekannter Fehler";
+
+    elements.progressText.textContent = "–";
+    elements.progressPercent.textContent = "–";
+  }
 }
 
-
-refreshButton.addEventListener("click", calculate);
+elements.refresh.addEventListener("click", calculate);
 
 calculate();

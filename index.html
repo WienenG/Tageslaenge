@@ -3,126 +3,131 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <meta name="theme-color" content="#08111f" />
   <title>Wassenberg – Sonnenzeiten & Tageslänge</title>
-
   <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
+  <div class="sky" aria-hidden="true">
+    <div class="sun-glow"></div>
+    <div class="stars"></div>
+  </div>
 
-  <main class="card">
-
-    <header>
-      <h1>Wassenberg</h1>
-      <p class="sub">
-        Sonnenaufgang, Sonnenuntergang & Tageslänge
-      </p>
-    </header>
-
-    <section class="grid">
-
-      <div class="box">
-        <div class="label">Datum</div>
-        <div id="date" class="value">–</div>
+  <main class="app-shell">
+    <section class="hero-card">
+      <div class="hero-copy">
+        <p class="eyebrow">SONNENSTAND · WASSENBERG</p>
+        <h1>Tageslicht auf einen Blick</h1>
+        <p class="intro">
+          Sonnenaufgang, Sonnenuntergang und die aktuelle Position im Jahresverlauf.
+        </p>
       </div>
 
-      <div class="box">
-        <div class="label">Sonnenaufgang</div>
-        <div id="sunrise" class="value">–</div>
+      <div class="hero-orbit" aria-hidden="true">
+        <div class="orbit-ring"></div>
+        <div class="orbit-sun"></div>
       </div>
-
-      <div class="box">
-        <div class="label">Sonnenuntergang</div>
-        <div id="sunset" class="value">–</div>
-      </div>
-
-      <div class="box">
-        <div class="label">Tageslänge</div>
-        <div id="daylen" class="value">–</div>
-      </div>
-
     </section>
 
-    <hr />
+    <section class="dashboard" aria-live="polite">
+      <article class="metric metric-date">
+        <span class="metric-label">Datum</span>
+        <strong id="date" class="metric-value">–</strong>
+      </article>
 
-    <section class="grid">
+      <article class="metric">
+        <span class="metric-label">Sonnenaufgang</span>
+        <strong id="sunrise" class="metric-value">–</strong>
+        <span class="metric-note">Beginn des Tageslichts</span>
+      </article>
 
-      <div class="box">
-        <div class="label">Kürzester Tag</div>
-        <div id="minDay" class="value">–</div>
-      </div>
+      <article class="metric">
+        <span class="metric-label">Sonnenuntergang</span>
+        <strong id="sunset" class="metric-value">–</strong>
+        <span class="metric-note">Ende des Tageslichts</span>
+      </article>
 
-      <div class="box">
-        <div class="label">Tageslänge am kürzesten Tag</div>
-        <div id="minLen" class="value">–</div>
-      </div>
-
-      <div class="box">
-        <div class="label">Differenz zu heute</div>
-        <div id="diffMin" class="value">–</div>
-      </div>
-
-      <div class="box">
-        <div class="label">Längster Tag</div>
-        <div id="maxDay" class="value">–</div>
-      </div>
-
-      <div class="box">
-        <div class="label">Tageslänge am längsten Tag</div>
-        <div id="maxLen" class="value">–</div>
-      </div>
-
-      <div class="box">
-        <div class="label">Differenz zu heute</div>
-        <div id="diffMax" class="value">–</div>
-      </div>
-
+      <article class="metric metric-accent">
+        <span class="metric-label">Tageslänge heute</span>
+        <strong id="daylen" class="metric-value">–</strong>
+        <span id="trendToday" class="metric-note">–</span>
+      </article>
     </section>
 
-    <hr />
-
-    <section class="year-progress">
-
-      <div class="progress-heading">
+    <section class="season-card">
+      <div class="section-heading">
         <div>
-          <div class="label">Tageslänge im Jahresverlauf</div>
-          <div id="progressText" class="progress-text">–</div>
+          <p class="eyebrow">JAHRESVERLAUF</p>
+          <h2>Zwischen Winter und Sommer</h2>
+        </div>
+        <div id="progressPercent" class="season-percent">–</div>
+      </div>
+
+      <div class="season-scale">
+        <div class="season-scale-labels">
+          <span>Wintersonnenwende</span>
+          <span>Sommersonnenwende</span>
         </div>
 
-        <div id="progressPercent" class="progress-percent">–</div>
-      </div>
+        <div class="season-track">
+          <div id="progressBar" class="season-fill"></div>
+          <div id="progressMarker" class="season-marker">
+            <span>Heute</span>
+          </div>
+        </div>
 
-      <div class="progress-labels">
-        <span>Kürzester Tag</span>
-        <span>Längster Tag</span>
+        <div class="season-bottom">
+          <span>kürzester Tag</span>
+          <strong id="progressText">–</strong>
+          <span>längster Tag</span>
+        </div>
       </div>
-
-      <div class="progress-track">
-        <div id="progressBar" class="progress-bar"></div>
-        <div id="progressMarker" class="progress-marker"></div>
-      </div>
-
-      <div class="progress-symbols">
-        <span>Winter</span>
-        <span id="trend">–</span>
-        <span>Sommer</span>
-      </div>
-
     </section>
 
-    <footer class="foot">
-      <div class="small" id="meta">–</div>
+    <section class="extremes-grid">
+      <article class="extreme-card winter">
+        <div class="extreme-icon">❄</div>
+        <div>
+          <span class="metric-label">Kürzester Tag</span>
+          <strong id="minDay" class="extreme-date">–</strong>
+        </div>
+        <div class="extreme-data">
+          <span>Tageslänge</span>
+          <strong id="minLen">–</strong>
+        </div>
+        <div class="extreme-data">
+          <span>Heute länger um</span>
+          <strong id="diffMin">–</strong>
+        </div>
+      </article>
+
+      <article class="extreme-card summer">
+        <div class="extreme-icon">☀</div>
+        <div>
+          <span class="metric-label">Längster Tag</span>
+          <strong id="maxDay" class="extreme-date">–</strong>
+        </div>
+        <div class="extreme-data">
+          <span>Tageslänge</span>
+          <strong id="maxLen">–</strong>
+        </div>
+        <div class="extreme-data">
+          <span>Heute kürzer um</span>
+          <strong id="diffMax">–</strong>
+        </div>
+      </article>
+    </section>
+
+    <footer class="footer-card">
+      <div>
+        <strong id="statusLine">Berechnung läuft …</strong>
+        <span id="meta">–</span>
+      </div>
       <button id="refresh" type="button">Neu berechnen</button>
     </footer>
-
   </main>
 
-  <!-- Bibliothek zur Berechnung der Sonnenzeiten -->
   <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
-
-  <!-- Eigene Berechnungen -->
   <script src="app.js"></script>
-
 </body>
 </html>
